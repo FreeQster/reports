@@ -29,11 +29,6 @@ class UniqueIPReport(Report):
                                 self.log_warning( ip, msg )
                 duplicates = None
 
-        with open("/opt/netbox/netbox/reports/log.txt","w") as logtxt:
-            for line in already_found:
-                logtxt.write("%s\n" % line)
-        logtxt.close()
-
 class UniquePrefixReport(Report):
     description = "Validate that we don't have a Prefix allocated multiple times in a VRF"
 
