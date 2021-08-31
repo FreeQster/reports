@@ -10,19 +10,29 @@ class UniqueIPReport(Report):
     def test_unique_ip(self):
         already_found = []
         for ip in IPAddress.objects.exclude(Q(role=IPAddressRoleChoices.ROLE_ANYCAST) | Q(role=IPAddressRoleChoices.ROLE_VIP) | Q(role=IPAddressRoleChoices.ROLE_VRRP)):
-            if ip.address in already_found:
-               continue
-            elif not ip.interface:
-                continue
-            duplicates = ip.get_duplicates()
-            real_dup = 0
-            for duplicate in duplicates:
-                if duplicate.interface:
-                    real_dup +=1
-            if real_dup != 0:
-                already_found.append(ip.address)
-                msg = "has %s duplicate ips" % real_dup
-                self.log_failure( ip, msg )
+            abort = False
+            for i in already_found:
+                if str(ip) == str(i):
+                    msg = "IP skipped - Duplicate"
+                    self.log_info(ip,msg)
+                    abort = True
+
+            if abort == False:
+                duplicates = ip.get_duplicates()
+                real_dup = 0
+                for duplicate in duplicates:
+                        if duplicate.interface:
+                            real_dup +=1
+                            if real_dup != 0:
+                                already_found.append(str(ip))
+                                msg = "Has %s duplicate IPs" % real_dup
+                                self.log_warning( ip, msg )
+                duplicates = None
+
+        with open("/opt/netbox/netbox/reports/log.txt","w") as logtxt:
+            for line in already_found:
+                logtxt.write("%s\n" % line)
+        logtxt.close()
 
 class UniquePrefixReport(Report):
     description = "Validate that we don't have a Prefix allocated multiple times in a VRF"
